@@ -19,7 +19,7 @@ variable "profile_name" {
 }
 
 variable "sku_name" {
-  description = "SKU of the Front Door profile."
+  description = "SKU of the Front Door profile (Standard_AzureFrontDoor or Premium_AzureFrontDoor)."
   type        = string
   default     = "Standard_AzureFrontDoor"
 
@@ -30,7 +30,7 @@ variable "sku_name" {
 }
 
 variable "response_timeout_seconds" {
-  description = "Response timeout in seconds for the Front Door profile."
+  description = "Response timeout in seconds for the Front Door profile (16-240)."
   type        = number
   default     = 120
 
@@ -41,7 +41,7 @@ variable "response_timeout_seconds" {
 }
 
 variable "endpoints" {
-  description = "Map of Front Door endpoints."
+  description = "Map of Front Door endpoints to create."
   type = map(object({
     enabled = optional(bool, true)
   }))
@@ -49,7 +49,7 @@ variable "endpoints" {
 }
 
 variable "origin_groups" {
-  description = "Map of origin groups."
+  description = "Map of origin groups to create."
   type = map(object({
     session_affinity_enabled = optional(bool, false)
 
@@ -74,15 +74,15 @@ variable "origin_groups" {
 variable "origins" {
   description = "Map of origins within origin groups."
   type = map(object({
-    origin_group_name                = string
-    host_name                        = string
-    http_port                        = optional(number, 80)
-    https_port                       = optional(number, 443)
-    origin_host_header               = optional(string, null)
-    priority                         = optional(number, 1)
-    weight                           = optional(number, 1000)
-    certificate_name_check_enabled   = optional(bool, true)
-    enabled                          = optional(bool, true)
+    origin_group_name              = string
+    host_name                      = string
+    http_port                      = optional(number, 80)
+    https_port                     = optional(number, 443)
+    origin_host_header             = optional(string, null)
+    priority                       = optional(number, 1)
+    weight                         = optional(number, 1000)
+    certificate_name_check_enabled = optional(bool, true)
+    enabled                        = optional(bool, true)
 
     private_link = optional(object({
       request_message        = optional(string, "Front Door Private Link")
@@ -121,7 +121,7 @@ variable "routes" {
 }
 
 variable "rule_sets" {
-  description = "Map of rule sets."
+  description = "Map of rule sets with nested rules."
   type = map(object({
     rules = map(object({
       order             = number
@@ -184,12 +184,12 @@ variable "rule_sets" {
 }
 
 variable "custom_domains" {
-  description = "Map of custom domains."
+  description = "Map of custom domains to create."
   type = map(object({
     host_name = string
     tls = optional(object({
-      certificate_type    = optional(string, "ManagedCertificate")
-      minimum_tls_version = optional(string, "TLS12")
+      certificate_type        = optional(string, "ManagedCertificate")
+      minimum_tls_version     = optional(string, "TLS12")
       cdn_frontdoor_secret_id = optional(string, null)
     }), {})
     dns_zone_id = optional(string, null)
@@ -198,7 +198,7 @@ variable "custom_domains" {
 }
 
 variable "waf_policies" {
-  description = "Map of WAF policies."
+  description = "Map of WAF policies to create."
   type = map(object({
     mode    = optional(string, "Prevention")
     enabled = optional(bool, true)
@@ -256,9 +256,9 @@ variable "waf_policies" {
 variable "security_policies" {
   description = "Map of security policies linking WAF to endpoints/domains."
   type = map(object({
-    waf_policy_name = string
-    patterns_to_match = optional(list(string), ["/*"])
-    endpoint_names    = optional(list(string), [])
+    waf_policy_name     = string
+    patterns_to_match   = optional(list(string), ["/*"])
+    endpoint_names      = optional(list(string), [])
     custom_domain_names = optional(list(string), [])
   }))
   default = {}

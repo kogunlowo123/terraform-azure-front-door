@@ -1,18 +1,12 @@
-###############################################################################
-# Front Door Profile
-###############################################################################
 resource "azurerm_cdn_frontdoor_profile" "this" {
   name                     = var.profile_name
   resource_group_name      = var.resource_group_name
   sku_name                 = var.sku_name
   response_timeout_seconds = var.response_timeout_seconds
 
-  tags = local.common_tags
+  tags = var.tags
 }
 
-###############################################################################
-# Endpoints
-###############################################################################
 resource "azurerm_cdn_frontdoor_endpoint" "this" {
   for_each = var.endpoints
 
@@ -20,12 +14,9 @@ resource "azurerm_cdn_frontdoor_endpoint" "this" {
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.this.id
   enabled                  = each.value.enabled
 
-  tags = local.common_tags
+  tags = var.tags
 }
 
-###############################################################################
-# Origin Groups
-###############################################################################
 resource "azurerm_cdn_frontdoor_origin_group" "this" {
   for_each = var.origin_groups
 
@@ -52,9 +43,6 @@ resource "azurerm_cdn_frontdoor_origin_group" "this" {
   }
 }
 
-###############################################################################
-# Origins
-###############################################################################
 resource "azurerm_cdn_frontdoor_origin" "this" {
   for_each = var.origins
 
@@ -80,9 +68,6 @@ resource "azurerm_cdn_frontdoor_origin" "this" {
   }
 }
 
-###############################################################################
-# Custom Domains
-###############################################################################
 resource "azurerm_cdn_frontdoor_custom_domain" "this" {
   for_each = var.custom_domains
 
@@ -92,15 +77,12 @@ resource "azurerm_cdn_frontdoor_custom_domain" "this" {
   dns_zone_id              = each.value.dns_zone_id
 
   tls {
-    certificate_type    = each.value.tls.certificate_type
-    minimum_tls_version = each.value.tls.minimum_tls_version
+    certificate_type        = each.value.tls.certificate_type
+    minimum_tls_version     = each.value.tls.minimum_tls_version
     cdn_frontdoor_secret_id = each.value.tls.cdn_frontdoor_secret_id
   }
 }
 
-###############################################################################
-# Rule Sets
-###############################################################################
 resource "azurerm_cdn_frontdoor_rule_set" "this" {
   for_each = var.rule_sets
 
@@ -108,11 +90,19 @@ resource "azurerm_cdn_frontdoor_rule_set" "this" {
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.this.id
 }
 
-###############################################################################
-# Rules
-###############################################################################
 resource "azurerm_cdn_frontdoor_rule" "this" {
-  for_each = local.rules_map
+  for_each = {
+    for r in flatten([
+      for rs_key, rs_val in var.rule_sets : [
+        for r_key, r_val in rs_val.rules : {
+          rule_set_key  = rs_key
+          rule_key      = r_key
+          composite_key = "${rs_key}-${r_key}"
+          rule          = r_val
+        }
+      ]
+    ]) : r.composite_key => r
+  }
 
   name                      = each.value.rule_key
   cdn_frontdoor_rule_set_id = azurerm_cdn_frontdoor_rule_set.this[each.value.rule_set_key].id
@@ -199,9 +189,6 @@ resource "azurerm_cdn_frontdoor_rule" "this" {
   }
 }
 
-###############################################################################
-# Routes
-###############################################################################
 resource "azurerm_cdn_frontdoor_route" "this" {
   for_each = var.routes
 
@@ -230,9 +217,6 @@ resource "azurerm_cdn_frontdoor_route" "this" {
   }
 }
 
-###############################################################################
-# Custom Domain Associations
-###############################################################################
 resource "azurerm_cdn_frontdoor_custom_domain_association" "this" {
   for_each = {
     for k, v in var.routes : k => v
@@ -243,9 +227,6 @@ resource "azurerm_cdn_frontdoor_custom_domain_association" "this" {
   cdn_frontdoor_route_ids        = [azurerm_cdn_frontdoor_route.this[each.key].id]
 }
 
-###############################################################################
-# WAF Policies
-###############################################################################
 resource "azurerm_cdn_frontdoor_firewall_policy" "this" {
   for_each = var.waf_policies
 
@@ -319,12 +300,9 @@ resource "azurerm_cdn_frontdoor_firewall_policy" "this" {
     }
   }
 
-  tags = local.common_tags
+  tags = var.tags
 }
 
-###############################################################################
-# Security Policies
-###############################################################################
 resource "azurerm_cdn_frontdoor_security_policy" "this" {
   for_each = var.security_policies
 
