@@ -75,8 +75,8 @@ module "front_door" {
       host_name         = "api-prod.azurewebsites.net"
     }
     "origin-static" = {
-      origin_group_name = "og-static"
-      host_name         = "mystatic.blob.core.windows.net"
+      origin_group_name  = "og-static"
+      host_name          = "mystatic.blob.core.windows.net"
       origin_host_header = "mystatic.blob.core.windows.net"
     }
   }
@@ -98,11 +98,11 @@ module "front_door" {
 
   routes = {
     "rt-web" = {
-      endpoint_name        = "ep-web"
-      origin_group_name    = "og-web"
-      patterns_to_match    = ["/*"]
-      custom_domain_names  = ["www-example-com"]
-      rule_set_names       = ["SecurityHeaders", "CacheOptimization"]
+      endpoint_name       = "ep-web"
+      origin_group_name   = "og-web"
+      patterns_to_match   = ["/*"]
+      custom_domain_names = ["www-example-com"]
+      rule_set_names      = ["SecurityHeaders", "CacheOptimization"]
 
       cache = {
         query_string_caching_behavior = "UseQueryString"
