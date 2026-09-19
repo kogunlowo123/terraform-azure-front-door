@@ -149,7 +149,7 @@ module "front_door" {
 | Name | Version |
 |------|---------|
 | [terraform](https://www.terraform.io/) | >= 1.5.0 |
-| [azurerm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs) | >= 3.80.0 |
+| [azurerm](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs) | >= 5.0.0, < 6.0.0 |
 
 ## Resources
 

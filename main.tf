@@ -78,7 +78,7 @@ resource "azurerm_cdn_frontdoor_custom_domain" "this" {
 
   tls {
     certificate_type        = each.value.tls.certificate_type
-    minimum_tls_version     = each.value.tls.minimum_tls_version
+    minimum_version         = each.value.tls.minimum_tls_version
     cdn_frontdoor_secret_id = each.value.tls.cdn_frontdoor_secret_id
   }
 }
@@ -107,38 +107,37 @@ resource "azurerm_cdn_frontdoor_rule" "this" {
   name                      = each.value.rule_key
   cdn_frontdoor_rule_set_id = azurerm_cdn_frontdoor_rule_set.this[each.value.rule_set_key].id
   order                     = each.value.rule.order
-  behavior_on_match         = each.value.rule.behavior_on_match
+  behaviour_on_match        = each.value.rule.behavior_on_match
 
   dynamic "conditions" {
     for_each = each.value.rule.conditions != null ? [each.value.rule.conditions] : []
     content {
-      dynamic "request_uri_condition" {
+      # azurerm 5.x removed negate_condition; negation is expressed with the
+      # Not-prefixed operator (e.g. Equal -> NotEqual, IPMatch -> NotIPMatch).
+      dynamic "request_url" {
         for_each = conditions.value.request_uri_conditions
         content {
-          operator         = request_uri_condition.value.operator
-          match_values     = request_uri_condition.value.match_values
-          negate_condition = request_uri_condition.value.negate_condition
-          transforms       = request_uri_condition.value.transforms
+          operator   = request_url.value.negate_condition ? (startswith(request_url.value.operator, "Not") ? trimprefix(request_url.value.operator, "Not") : "Not${request_url.value.operator}") : request_url.value.operator
+          values     = length(request_url.value.match_values) > 0 ? request_url.value.match_values : null
+          transforms = request_url.value.transforms
         }
       }
 
-      dynamic "request_header_condition" {
+      dynamic "request_header" {
         for_each = conditions.value.request_header_conditions
         content {
-          header_name      = request_header_condition.value.header_name
-          operator         = request_header_condition.value.operator
-          match_values     = request_header_condition.value.match_values
-          negate_condition = request_header_condition.value.negate_condition
-          transforms       = request_header_condition.value.transforms
+          name       = request_header.value.header_name
+          operator   = request_header.value.negate_condition ? (startswith(request_header.value.operator, "Not") ? trimprefix(request_header.value.operator, "Not") : "Not${request_header.value.operator}") : request_header.value.operator
+          values     = length(request_header.value.match_values) > 0 ? request_header.value.match_values : null
+          transforms = request_header.value.transforms
         }
       }
 
-      dynamic "remote_address_condition" {
+      dynamic "remote_address" {
         for_each = conditions.value.remote_address_conditions
         content {
-          operator         = remote_address_condition.value.operator
-          match_values     = remote_address_condition.value.match_values
-          negate_condition = remote_address_condition.value.negate_condition
+          operator = remote_address.value.negate_condition ? (startswith(remote_address.value.operator, "Not") ? trimprefix(remote_address.value.operator, "Not") : "Not${remote_address.value.operator}") : remote_address.value.operator
+          values   = remote_address.value.match_values
         }
       }
     }
@@ -147,42 +146,42 @@ resource "azurerm_cdn_frontdoor_rule" "this" {
   dynamic "actions" {
     for_each = each.value.rule.actions != null ? [each.value.rule.actions] : []
     content {
-      dynamic "url_redirect_action" {
+      dynamic "url_redirect" {
         for_each = actions.value.url_redirect_action != null ? [actions.value.url_redirect_action] : []
         content {
-          redirect_type        = url_redirect_action.value.redirect_type
-          redirect_protocol    = url_redirect_action.value.redirect_protocol
-          destination_hostname = url_redirect_action.value.destination_hostname
-          destination_path     = url_redirect_action.value.destination_path
-          destination_fragment = url_redirect_action.value.destination_fragment
-          query_string         = url_redirect_action.value.query_string
+          redirect_type         = url_redirect.value.redirect_type
+          redirect_protocol     = url_redirect.value.redirect_protocol
+          destination_host_name = url_redirect.value.destination_hostname != "" ? url_redirect.value.destination_hostname : null
+          destination_path      = url_redirect.value.destination_path != "" ? url_redirect.value.destination_path : null
+          destination_fragment  = url_redirect.value.destination_fragment != "" ? url_redirect.value.destination_fragment : null
+          query_string          = url_redirect.value.query_string != "" ? url_redirect.value.query_string : null
         }
       }
 
-      dynamic "url_rewrite_action" {
+      dynamic "url_rewrite" {
         for_each = actions.value.url_rewrite_action != null ? [actions.value.url_rewrite_action] : []
         content {
-          source_pattern          = url_rewrite_action.value.source_pattern
-          destination             = url_rewrite_action.value.destination
-          preserve_unmatched_path = url_rewrite_action.value.preserve_unmatched_path
+          source_pattern                  = url_rewrite.value.source_pattern
+          destination_path                = url_rewrite.value.destination
+          preserve_unmatched_path_enabled = url_rewrite.value.preserve_unmatched_path
         }
       }
 
-      dynamic "request_header_action" {
+      dynamic "modify_request_header" {
         for_each = actions.value.request_header_action
         content {
-          header_action = request_header_action.value.header_action
-          header_name   = request_header_action.value.header_name
-          value         = request_header_action.value.value
+          operator     = modify_request_header.value.header_action
+          header_name  = modify_request_header.value.header_name
+          header_value = modify_request_header.value.value
         }
       }
 
-      dynamic "response_header_action" {
+      dynamic "modify_response_header" {
         for_each = actions.value.response_header_action
         content {
-          header_action = response_header_action.value.header_action
-          header_name   = response_header_action.value.header_name
-          value         = response_header_action.value.value
+          operator     = modify_response_header.value.header_action
+          header_name  = modify_response_header.value.header_name
+          header_value = modify_response_header.value.value
         }
       }
     }
